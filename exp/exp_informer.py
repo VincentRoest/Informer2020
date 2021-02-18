@@ -21,7 +21,7 @@ warnings.filterwarnings('ignore')
 class Exp_Informer(Exp_Basic):
     def __init__(self, args):
         super(Exp_Informer, self).__init__(args)
-    
+
     def _build_model(self):
         model_dict = {
             'informer':Informer,
@@ -29,25 +29,25 @@ class Exp_Informer(Exp_Basic):
         if self.args.model=='informer':
             model = model_dict[self.args.model](
                 self.args.enc_in,
-                self.args.dec_in, 
-                self.args.c_out, 
-                self.args.seq_len, 
+                self.args.dec_in,
+                self.args.c_out,
+                self.args.seq_len,
                 self.args.label_len,
-                self.args.pred_len, 
+                self.args.pred_len,
                 self.args.factor,
-                self.args.d_model, 
-                self.args.n_heads, 
+                self.args.d_model,
+                self.args.n_heads,
                 self.args.e_layers,
-                self.args.d_layers, 
+                self.args.d_layers,
                 self.args.d_ff,
-                self.args.dropout, 
+                self.args.dropout,
                 self.args.attn,
                 self.args.embed,
                 self.args.data[:-1],
                 self.args.activation,
                 self.device
             )
-        
+
         return model.double()
 
     def _get_data(self, flag):
@@ -64,7 +64,7 @@ class Exp_Informer(Exp_Basic):
             shuffle_flag = False; drop_last = True; batch_size = args.batch_size
         else:
             shuffle_flag = True; drop_last = True; batch_size = args.batch_size
-        
+
         data_set = Data(
             root_path=args.root_path,
             data_path=args.data_path,
@@ -85,7 +85,7 @@ class Exp_Informer(Exp_Basic):
     def _select_optimizer(self):
         model_optim = optim.Adam(self.model.parameters(), lr=self.args.learning_rate)
         return model_optim
-    
+
     def _select_criterion(self):
         criterion =  nn.MSELoss()
         return criterion
@@ -96,7 +96,7 @@ class Exp_Informer(Exp_Basic):
         for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(vali_loader):
             batch_x = batch_x.double().to(self.device)
             batch_y = batch_y.double()
-            
+
             batch_x_mark = batch_x_mark.double().to(self.device)
             batch_y_mark = batch_y_mark.double().to(self.device)
 
@@ -110,13 +110,13 @@ class Exp_Informer(Exp_Basic):
             pred = outputs.detach().cpu()
             true = batch_y.detach().cpu()
 
-            loss = criterion(pred, true) 
+            loss = criterion(pred, true)
 
             total_loss.append(loss)
         total_loss = np.average(total_loss)
         self.model.train()
         return total_loss
-        
+
     def train(self, setting):
         train_data, train_loader = self._get_data(flag = 'train')
         vali_data, vali_loader = self._get_data(flag = 'val')
@@ -127,26 +127,26 @@ class Exp_Informer(Exp_Basic):
             os.makedirs(path)
 
         time_now = time.time()
-        
+
         train_steps = len(train_loader)
         early_stopping = EarlyStopping(patience=self.args.patience, verbose=True)
-        
+
         model_optim = self._select_optimizer()
         criterion =  self._select_criterion()
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
             train_loss = []
-            
+
             self.model.train()
             for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
-                
+
                 model_optim.zero_grad()
-                
+
                 batch_x = batch_x.double().to(self.device)
                 batch_y = batch_y.double()
-                
+
                 batch_x_mark = batch_x_mark.double().to(self.device)
                 batch_y_mark = batch_y_mark.double().to(self.device)
 
@@ -159,7 +159,7 @@ class Exp_Informer(Exp_Basic):
                 batch_y = batch_y[:,-self.args.pred_len:,:].to(self.device)
                 loss = criterion(outputs, batch_y)
                 train_loss.append(loss.item())
-                
+
                 if (i+1) % 100==0:
                     print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
                     speed = (time.time()-time_now)/iter_count
@@ -167,7 +167,7 @@ class Exp_Informer(Exp_Basic):
                     print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                     iter_count = 0
                     time_now = time.time()
-                
+
                 loss.backward()
                 model_optim.step()
 
@@ -183,20 +183,20 @@ class Exp_Informer(Exp_Basic):
                 break
 
             adjust_learning_rate(model_optim, epoch+1, self.args)
-            
+
         best_model_path = path+'/'+'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
-        
+
         return self.model
 
     def test(self, setting):
         test_data, test_loader = self._get_data(flag='test')
-        
+
         self.model.eval()
-        
+
         preds = []
         trues = []
-        
+
         for i, (batch_x,batch_y,batch_x_mark,batch_y_mark) in enumerate(test_loader):
             batch_x = batch_x.double().to(self.device)
             batch_y = batch_y.double()
@@ -209,10 +209,10 @@ class Exp_Informer(Exp_Basic):
             # encoder - decoder
             outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
             batch_y = batch_y[:,-self.args.pred_len:,:].to(self.device)
-            
+
             pred = outputs.detach().cpu().numpy()#.squeeze()
             true = batch_y.detach().cpu().numpy()#.squeeze()
-            
+
             preds.append(pred)
             trues.append(true)
 

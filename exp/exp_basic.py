@@ -11,9 +11,9 @@ class Exp_Basic(object):
     def _build_model(self):
         raise NotImplementedError
         return None
-    
+
     def _acquire_device(self):
-        if self.args.use_gpu:
+        if self.args.use_gpu and torch.cuda.is_available():
             os.environ["CUDA_VISIBLE_DEVICES"] = str(self.args.gpu)
             device = torch.device('cuda:0')
             print('Use GPU: cuda:0')
@@ -33,4 +33,3 @@ class Exp_Basic(object):
 
     def test(self):
         pass
-    

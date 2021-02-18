@@ -9,21 +9,22 @@ parser.add_argument('--model', type=str, required=True, default='informer',help=
 
 parser.add_argument('--data', type=str, required=True, default='ETTh1', help='data')
 parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='location of the data file')    
+parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='location of the data file')
 parser.add_argument('--features', type=str, default='M', help='features [S, M]')
 parser.add_argument('--target', type=str, default='OT', help='target feature')
 
 parser.add_argument('--seq_len', type=int, default=96, help='input series length')
 parser.add_argument('--label_len', type=int, default=48, help='help series length')
 parser.add_argument('--pred_len', type=int, default=24, help='predict series length')
+
 parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
 parser.add_argument('--dec_in', type=int, default=7, help='decoder input size')
 parser.add_argument('--c_out', type=int, default=7, help='output size')
-parser.add_argument('--d_model', type=int, default=512, help='dimension of model')
+parser.add_argument('--d_model', type=int, default=32, help='dimension of model')
 parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
-parser.add_argument('--e_layers', type=int, default=3, help='num of encoder layers')
-parser.add_argument('--d_layers', type=int, default=2, help='num of decoder layers')
-parser.add_argument('--d_ff', type=int, default=1024, help='dimension of fcn')
+parser.add_argument('--e_layers', type=int, default=1, help='num of encoder layers')
+parser.add_argument('--d_layers', type=int, default=1, help='num of decoder layers')
+parser.add_argument('--d_ff', type=int, default=256, help='dimension of fcn')
 parser.add_argument('--factor', type=int, default=5, help='prob sparse factor')
 
 parser.add_argument('--dropout', type=float, default=0.05, help='dropout')
@@ -60,13 +61,13 @@ if args.data in data_parser.keys():
 Exp = Exp_Informer
 
 for ii in range(args.itr):
-    setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_eb{}_{}_{}'.format(args.model, args.data, args.features, 
+    setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_eb{}_{}_{}'.format(args.model, args.data, args.features,
                 args.seq_len, args.label_len, args.pred_len,
                 args.d_model, args.n_heads, args.e_layers, args.d_layers, args.d_ff, args.attn, args.embed, args.des, ii)
 
     exp = Exp(args)
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
     exp.train(setting)
-    
+
     print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
     exp.test(setting)

@@ -27,7 +27,7 @@ class TokenEmbedding(nn.Module):
     def __init__(self, c_in, d_model):
         super(TokenEmbedding, self).__init__()
         padding = 1 if torch.__version__>='1.5.0' else 2
-        self.tokenConv = nn.Conv1d(in_channels=c_in, out_channels=d_model, 
+        self.tokenConv = nn.Conv1d(in_channels=c_in, out_channels=d_model,
                                     kernel_size=3, padding=padding, padding_mode='circular')
         for m in self.modules():
             if isinstance(m, nn.Conv1d):
@@ -70,29 +70,35 @@ class TemporalEmbedding(nn.Module):
         self.weekday_embed = Embed(weekday_size, d_model)
         self.day_embed = Embed(day_size, d_model)
         self.month_embed = Embed(month_size, d_model)
-    
+
     def forward(self, x):
         x = x.long()
-        
+
         minute_x = self.minute_embed(x[:,:,4]) if hasattr(self, 'minute_embed') else 0.
         hour_x = self.hour_embed(x[:,:,3])
         weekday_x = self.weekday_embed(x[:,:,2])
         day_x = self.day_embed(x[:,:,1])
         month_x = self.month_embed(x[:,:,0])
-        
+
         return hour_x + weekday_x + day_x + month_x + minute_x
 
 class DataEmbedding(nn.Module):
-    def __init__(self, c_in, d_model, embed_type='fixed', data='ETTh', dropout=0.1):
+    def __init__(self, c_in, d_model, embed_type='fixed', data='ETTh', dropout=0.1, use_temporal_embedding=False):
         super(DataEmbedding, self).__init__()
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
         self.position_embedding = PositionalEmbedding(d_model=d_model)
-        self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type, data=data)
+
+        self.use_temporal_embedding = use_temporal_embedding
+        if use_temporal_embedding:
+            self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type, data=data)
 
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x, x_mark):
-        x = self.value_embedding(x) + self.position_embedding(x) + self.temporal_embedding(x_mark)
-        
+        if (self.use_temporal_embedding):
+            x = self.value_embedding(x) + self.position_embedding(x) + self.temporal_embedding(x_mark)
+        else:
+            x = self.value_embedding(x) + self.position_embedding(x)
+
         return self.dropout(x)

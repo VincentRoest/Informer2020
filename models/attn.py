@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 
 from math import sqrt
-from utils.masking import TriangularCausalMask, ProbMask
+from models.Informer2020.utils.masking import TriangularCausalMask, ProbMask
 
 class FullAttention(nn.Module):
     def __init__(self, mask_flag=True, factor=5, scale=None, attention_dropout=0.1):
@@ -13,7 +13,7 @@ class FullAttention(nn.Module):
         self.scale = scale
         self.mask_flag = mask_flag
         self.dropout = nn.Dropout(attention_dropout)
-        
+
     def forward(self, queries, keys, values, attn_mask):
         B, L, H, E = queries.shape
         _, S, _, D = values.shape
@@ -96,7 +96,7 @@ class ProbAttention(nn.Module):
 
         U = self.factor * np.ceil(np.log(S)).astype('int').item()
         u = self.factor * np.ceil(np.log(L)).astype('int').item()
-        
+
         scores_top, index = self._prob_QK(queries, keys, u, U)
         # add scale factor
         scale = self.scale or 1./sqrt(D)
@@ -106,7 +106,7 @@ class ProbAttention(nn.Module):
         context = self._get_initial_context(values, L)
         # update the context with selected top_k queries
         context = self._update_context(context, values, scores_top, index, L, attn_mask)
-        
+
         return context.contiguous()
 
 
